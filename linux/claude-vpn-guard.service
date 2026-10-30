@@ -1,0 +1,19 @@
+[Unit]
+Description=Claude VPN Guard — блокировка Claude/Anthropic без VPN
+Documentation=https://github.com/sharlupa/do-not-acces-claude-with-out-vpn
+Wants=network-pre.target
+Before=network-pre.target
+After=nftables.service firewalld.service ufw.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/claude-vpn-guard daemon
+Restart=always
+RestartSec=2
+# Правила nftables намеренно остаются при падении процесса (fail-closed);
+# снимаются только при штатной остановке службы.
+KillMode=mixed
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

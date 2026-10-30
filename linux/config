@@ -1,0 +1,28 @@
+# Настройки Claude VPN Guard. После изменения:
+#   sudo systemctl restart claude-vpn-guard
+
+# Домены, которые блокируются через /etc/hosts без VPN и чьи IP добавляются в фаервол
+DOMAINS="claude.ai www.claude.ai claude.com www.claude.com anthropic.com www.anthropic.com
+api.anthropic.com console.anthropic.com docs.anthropic.com support.anthropic.com
+statsig.anthropic.com a-cdn.anthropic.com a-api.anthropic.com s-cdn.anthropic.com
+platform.claude.com code.claude.com docs.claude.com support.claude.com
+claudeusercontent.com www.claudeusercontent.com claude.site"
+
+# Сети Anthropic, трафик к которым разрешён только через VPN-интерфейс
+STATIC_V4="160.79.104.0/23"
+STATIC_V6="2607:6bc0::/48"
+
+# Имена интерфейсов, которые считаются VPN. Если ваш VPN создаёт интерфейс
+# с другим именем (посмотрите `ip link`), добавьте его сюда.
+VPN_IFACES="tun* tap* wg* ppp* ipsec* vti* utun* nordlynx* proton* mullvad* amn* outline*
+nekoray* throne* hiddify* singbox* sing-box* sbox* xray* v2ray* clash* mihomo* Meta* tailscale* zt*"
+
+# Заглушки доменов в /etc/hosts, пока VPN выключен (чтобы DNS-запросы не утекали)
+HOSTS_BLOCK="yes"
+
+# Всплывающие уведомления на рабочем столе при смене состояния VPN
+NOTIFY="yes"
+
+# Как часто (сек) проверять VPN и обновлять IP-адреса доменов
+CHECK_INTERVAL=3
+RESOLVE_INTERVAL=600
