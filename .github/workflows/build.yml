@@ -64,7 +64,7 @@ jobs:
 
       - name: Package
         run: |
-          VERSION=1.0.${{ github.run_number }} linux/build-deb.sh dist
+          VERSION=1.0.${{ github.run_number }} linux/build-deb.sh "$PWD/dist"
           tar -czf dist/claude-vpn-guard-linux.tar.gz -C linux \
             claude-vpn-guard claude-vpn-guard.service config install.sh uninstall.sh
 
