@@ -18,10 +18,18 @@ FIREWALL_DOMAINS="claude.ai claude.com api.anthropic.com platform.claude.com con
 STATIC_V4="160.79.104.0/23"
 STATIC_V6="2607:6bc0::/48"
 
-# Имена интерфейсов, которые считаются VPN. Если ваш VPN создаёт интерфейс
-# с другим именем (посмотрите `ip link`), добавьте его сюда.
-VPN_IFACES="tun* tap* wg* ppp* ipsec* vti* utun* nordlynx* proton* mullvad* amn* outline*
+# Типы интерфейсов, которые считаются VPN (65534 — любой TUN или WireGuard: hysteria2,
+# sing-box, xray, OpenVPN, AmneziaWG...; 512 — PPP). Имя интерфейса при этом не важно.
+VPN_IFACE_TYPES="65534 512"
+
+# Дополнительно — интерфейсы по имени (например, TAP-адаптеры). Посмотреть свои: `ip link`
+VPN_IFACES="tun* tap* wg* ppp* hy* ipsec* vti* utun* nordlynx* proton* mullvad* amn* outline*
 nekoray* throne* hiddify* singbox* sing-box* sbox* xray* v2ray* clash* mihomo* Meta* tailscale* zt*"
+
+# Прокси-клиенты без TUN (SOCKS5/HTTP-прокси). Пока такой процесс запущен, заглушки в
+# /etc/hosts снимаются, а прямые соединения к Claude фаервол по-прежнему отклоняет.
+PROXY_PROCESSES="hysteria hysteria2 sing-box xray v2ray v2raya mihomo clash clash-meta
+nekoray nekobox throne hiddify hiddify-core naive trojan trojan-go ss-local sslocal tuic-client"
 
 # Заглушки доменов в /etc/hosts, пока VPN выключен (чтобы DNS-запросы не утекали)
 HOSTS_BLOCK="yes"

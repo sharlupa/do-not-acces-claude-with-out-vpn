@@ -79,8 +79,8 @@ nftables:   правила загружены
 - Раз в 3 секунды служба проверяет, через какой интерфейс идёт маршрут к Claude, и включает/выключает
   заглушки в `/etc/hosts`. Если правила кто-то сбросит (например, `nft flush ruleset`), они восстановятся.
 - При смене состояния на рабочий стол приходит уведомление (нужен `notify-send`).
-- Если процесс упадёт, правила остаются (блокировка не снимается). Снимаются они только при
-  `systemctl stop`.
+- Если процесс упадёт, systemd перезапустит его через 2 секунды. При остановке службы
+  (`claude-vpn-guard off`, `systemctl stop`) правила и заглушки снимаются.
 
 ### Claude Code в терминале
 
@@ -101,30 +101,53 @@ Claude Code обращается к `api.anthropic.com`, `claude.ai` и `platfor
 `Unable to connect to API`. Если Claude Code настроен на Amazon Bedrock или Google Vertex, а не на API
 Anthropic, эти адреса не блокируются.
 
+### Включить / выключить
+
+```bash
+sudo claude-vpn-guard off
+```
+
+Полностью выключает защиту: останавливает службу, убирает её из автозапуска, снимает правила фаервола
+и заглушки в `/etc/hosts`. Включить обратно:
+
+```bash
+sudo claude-vpn-guard on
+```
+
+(`systemctl disable` без `--now` только убирает автозапуск, а уже запущенная служба продолжает работать —
+поэтому лучше пользоваться `off`. Эквивалент: `sudo systemctl disable --now claude-vpn-guard`.)
+
+### Какой VPN считается включённым
+
+- **Любой TUN- или WireGuard-интерфейс**, как бы он ни назывался: Hysteria2 в режиме TUN, sing-box, xray,
+  v2rayN, Nekoray/Throne, Hiddify, OpenVPN, WireGuard, AmneziaWG и т. д. Проверяется тип интерфейса
+  (`/sys/class/net/*/type` = 65534), а не имя. Также PPP (L2TP/PPTP) и интерфейсы из `VPN_IFACES`.
+- **Прокси-режим без TUN** (Hysteria2, sing-box, xray и др. как SOCKS5/HTTP-прокси): пока процесс клиента
+  запущен, заглушки в `/etc/hosts` снимаются. Фаервол при этом остаётся: через прокси Claude работает
+  (к Anthropic подключается сервер прокси), а приложения, которые ходят напрямую, по-прежнему блокируются.
+  Для Claude Code в этом режиме задайте прокси, например `export HTTPS_PROXY=http://127.0.0.1:8080`
+  (адрес — из конфига вашего клиента).
+
+`claude-vpn-guard status` показывает, через какой интерфейс идёт маршрут к Claude и какие интерфейсы
+считаются VPN:
+
+```
+Маршрут к Claude (160.79.104.10): hytun
+VPN:        АКТИВЕН (интерфейс hytun) — Claude доступен
+...
+Интерфейсы:
+  hytun            type=65534  VPN
+  wlp2s0           type=1      -
+```
+
 ### Настройка
 
-Файл `/etc/claude-vpn-guard/config`. Если ваш VPN создаёт интерфейс с необычным именем (смотрите
-`ip link` при включённом VPN), добавьте его в `VPN_IFACES` и перезапустите службу:
+Файл `/etc/claude-vpn-guard/config` (после изменения — `sudo systemctl restart claude-vpn-guard`).
+Если VPN включён, а `status` пишет «НЕ АКТИВЕН», посмотрите строку «Маршрут к Claude»: если там ваш
+обычный интерфейс (`wlp*`, `enp*`), значит VPN не заворачивает трафик к Claude (split tunneling или
+прокси-режим). Если клиента нет в `PROXY_PROCESSES`, добавьте имя его процесса туда.
 
-```bash
-sudo systemctl restart claude-vpn-guard
-```
-
-Если ваш VPN работает как прокси без TUN-интерфейса (например, браузер настроен на SOCKS5-прокси), то
-соединения через прокси пройдут: к Claude подключается сервер прокси, а не ваш компьютер. Если при этом
-сайт не открывается, поставьте `HOSTS_BLOCK="no"` или включите в прокси-клиенте удалённый DNS (`socks5h`).
-
-Временно отключить / включить:
-
-```bash
-sudo systemctl stop claude-vpn-guard
-```
-
-```bash
-sudo systemctl start claude-vpn-guard
-```
-
-Удалить: `sudo apt remove claude-vpn-guard` или `sudo ./uninstall.sh`.
+Удалить: `sudo pacman -R claude-vpn-guard`, `sudo apt remove claude-vpn-guard` или `sudo ./uninstall.sh`.
 
 ---
 

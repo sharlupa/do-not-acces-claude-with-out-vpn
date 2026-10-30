@@ -4,12 +4,13 @@
 # Как это работает:
 #   * nftables-таблица `inet claude_vpn_guard` отклоняет любые пакеты к IP-адресам
 #     Claude/Anthropic, которые уходят через НЕ-VPN интерфейс (eth*, wlan*, ...).
-#     Если VPN поднят и маршрут идёт через tun*/wg*/... — пакеты проходят.
+#     Если VPN поднят и маршрут идёт через VPN-интерфейс (любой TUN / WireGuard / PPP,
+#     как бы он ни назывался) — пакеты проходят.
 #     Это работает для браузера (включая DoH и QUIC), Claude Code CLI и любых приложений.
 #   * Пока VPN выключен, в /etc/hosts добавляются заглушки для доменов Claude,
 #     чтобы даже DNS-запросы к провайдеру не уходили.
 #
-# Команды: daemon | apply | stop | status | check
+# Команды: on | off | status | daemon | apply | stop | check
 
 set -u
 
@@ -34,9 +35,18 @@ FIREWALL_DOMAINS="claude.ai claude.com api.anthropic.com platform.claude.com con
 # Собственные сети Anthropic (AS399358)
 STATIC_V4="160.79.104.0/23"
 STATIC_V6="2607:6bc0::/48"
-# Интерфейсы, которые считаются VPN (шаблоны в стиле shell)
-VPN_IFACES="tun* tap* wg* ppp* ipsec* vti* utun* nordlynx* proton* mullvad* amn* outline*
+# Типы интерфейсов, которые считаются VPN (/sys/class/net/*/type):
+#   65534 — TUN и WireGuard (так работают hysteria2, sing-box, xray, OpenVPN, AmneziaWG ...)
+#   512   — PPP (L2TP, PPTP)
+VPN_IFACE_TYPES="65534 512"
+# Дополнительно — интерфейсы по имени (шаблоны в стиле shell), например TAP-адаптеры
+VPN_IFACES="tun* tap* wg* ppp* hy* ipsec* vti* utun* nordlynx* proton* mullvad* amn* outline*
 nekoray* throne* hiddify* singbox* sing-box* sbox* xray* v2ray* clash* mihomo* Meta* tailscale* zt*"
+# Прокси-клиенты без TUN (режим SOCKS5/HTTP-прокси). Пока такой процесс запущен, считается,
+# что VPN включён: заглушки /etc/hosts снимаются, чтобы браузер/Claude Code через прокси
+# работали. Фаервол при этом остаётся — прямые соединения к Claude по-прежнему отклоняются.
+PROXY_PROCESSES="hysteria hysteria2 sing-box xray v2ray v2raya mihomo clash clash-meta
+nekoray nekobox throne hiddify hiddify-core naive trojan trojan-go ss-local sslocal tuic-client"
 # IP для проверки маршрута (адрес api.anthropic.com / claude.ai)
 PROBE_IP="160.79.104.10"
 HOSTS_BLOCK="yes"
@@ -59,7 +69,9 @@ need_root() {
 # ---------------- nftables ----------------
 
 iface_rules() {
-    local dir="$1" pat
+    local dir="$1" pat types
+    types=$(echo $VPN_IFACE_TYPES | tr ' ' ',')
+    [ -n "$types" ] && printf '        meta %stype { %s } accept\n' "$dir" "$types"
     for pat in $VPN_IFACES; do
         printf '        %sname "%s" accept\n' "$dir" "$pat"
     done
@@ -136,10 +148,26 @@ resolve_domains() {
 # ---------------- VPN ----------------
 
 is_vpn_iface() {
-    local dev="$1" pat
+    local dev="$1" pat type t
+    type=$(cat "/sys/class/net/$dev/type" 2>/dev/null)
+    for t in $VPN_IFACE_TYPES; do
+        [ "$type" = "$t" ] && return 0
+    done
     for pat in $VPN_IFACES; do
         # shellcheck disable=SC2053
         [[ "$dev" == $pat ]] && return 0
+    done
+    return 1
+}
+
+# Печатает имя запущенного прокси-клиента (режим без TUN), если он есть.
+proxy_running() {
+    local p
+    for p in $PROXY_PROCESSES; do
+        if pgrep -x "$p" >/dev/null 2>&1; then
+            echo "$p"
+            return 0
+        fi
     done
     return 1
 }
@@ -149,10 +177,25 @@ route_dev() {
     ip route get "$PROBE_IP" 2>/dev/null | sed -n 's/.* dev \([^ ]*\).*/\1/p' | head -n1
 }
 
-vpn_active() {
+tunnel_active() {
     local dev
     dev=$(route_dev)
     [ -n "$dev" ] && is_vpn_iface "$dev"
+}
+
+# VPN считается включённым, если маршрут к Claude идёт через VPN-интерфейс
+# или запущен прокси-клиент.
+vpn_active() {
+    tunnel_active || proxy_running >/dev/null
+}
+
+vpn_desc() {
+    local proxy
+    if tunnel_active; then
+        echo "интерфейс $(route_dev)"
+    elif proxy=$(proxy_running); then
+        echo "прокси $proxy"
+    fi
 }
 
 # ---------------- /etc/hosts ----------------
@@ -222,7 +265,7 @@ set_state() {
     if [ "$state" = "vpn" ]; then
         hosts_unblock
         resolve_domains &
-        log "VPN активен ($(route_dev)) — доступ к Claude разрешён"
+        log "VPN активен ($(vpn_desc)) — доступ к Claude разрешён"
         notify_users "VPN включён" "Доступ к Claude разрешён."
     else
         hosts_block
@@ -268,12 +311,26 @@ cmd_stop() {
     log "защита снята"
 }
 
+cmd_on() {
+    need_root
+    systemctl enable --now claude-vpn-guard.service && log "защита включена (и при загрузке тоже)"
+}
+
+cmd_off() {
+    need_root
+    systemctl disable --now claude-vpn-guard.service 2>/dev/null
+    cmd_stop
+    log "служба остановлена и не запустится при загрузке. Включить снова: sudo claude-vpn-guard on"
+}
+
 cmd_status() {
-    local dev
+    local dev proxy name type mark
     dev=$(route_dev)
     echo "Маршрут к Claude ($PROBE_IP): ${dev:-нет}"
-    if vpn_active; then
-        echo "VPN:        АКТИВЕН — Claude доступен"
+    if tunnel_active; then
+        echo "VPN:        АКТИВЕН (интерфейс $dev) — Claude доступен"
+    elif proxy=$(proxy_running); then
+        echo "VPN:        прокси-режим ($proxy) — Claude доступен только через прокси"
     else
         echo "VPN:        НЕ АКТИВЕН — Claude заблокирован"
     fi
@@ -288,14 +345,25 @@ cmd_status() {
         echo "/etc/hosts: заглушек нет"
     fi
     if command -v systemctl >/dev/null 2>&1; then
-        echo "Служба:     $(systemctl is-active claude-vpn-guard.service 2>/dev/null)"
+        echo "Служба:     $(systemctl is-active claude-vpn-guard.service 2>/dev/null)," \
+            "автозапуск: $(systemctl is-enabled claude-vpn-guard.service 2>/dev/null)"
     fi
+    echo "Интерфейсы:"
+    for name in /sys/class/net/*; do
+        name=${name##*/}
+        [ "$name" = lo ] && continue
+        type=$(cat "/sys/class/net/$name/type" 2>/dev/null)
+        if is_vpn_iface "$name"; then mark="VPN"; else mark="-"; fi
+        printf '  %-16s type=%-6s %s\n' "$name" "$type" "$mark"
+    done
 }
 
 # Для скриптов: код 0 — VPN активен, 1 — нет
 cmd_check() { vpn_active; }
 
 case "${1:-}" in
+    on)     cmd_on ;;
+    off)    cmd_off ;;
     daemon) cmd_daemon ;;
     apply)  cmd_apply ;;
     stop)   cmd_stop ;;
@@ -306,6 +374,8 @@ case "${1:-}" in
         cat <<EOF
 Использование: claude-vpn-guard <команда>
   status       показать состояние
+  on           включить защиту (sudo)
+  off          выключить защиту полностью и убрать из автозапуска (sudo)
   daemon       запустить слежение (используется systemd)
   apply        один раз загрузить правила
   stop         снять блокировку (правила и /etc/hosts)
