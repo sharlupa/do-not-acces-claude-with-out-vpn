@@ -7,27 +7,35 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.os.Process;
 import android.provider.Settings;
 
 /** Определение активного VPN и открытие VPN-приложения. */
 final class VpnState {
     private VpnState() {}
 
-    @SuppressWarnings("deprecation")
+    /** Включён ли ваш VPN (собственный VPN-блокировщик не считается). */
     static boolean isVpnActive(Context ctx) {
-        ConnectivityManager cm = ctx.getSystemService(ConnectivityManager.class);
-        if (cm == null) return false;
-        if (isVpn(cm, cm.getActiveNetwork())) return true;
-        for (Network n : cm.getAllNetworks()) {
-            if (isVpn(cm, n)) return true;
-        }
-        return false;
+        return findVpn(ctx, false);
     }
 
-    private static boolean isVpn(ConnectivityManager cm, Network n) {
-        if (n == null) return false;
-        NetworkCapabilities caps = cm.getNetworkCapabilities(n);
-        return caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+    /** Поднят ли VPN-блокировщик этого приложения. */
+    static boolean isBlockerActive(Context ctx) {
+        return findVpn(ctx, true);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean findVpn(Context ctx, boolean ours) {
+        ConnectivityManager cm = ctx.getSystemService(ConnectivityManager.class);
+        if (cm == null) return false;
+        for (Network n : cm.getAllNetworks()) {
+            NetworkCapabilities caps = cm.getNetworkCapabilities(n);
+            if (caps == null || !caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue;
+            // владелец VPN-сети виден только самому владельцу, для чужих VPN тут INVALID_UID
+            boolean isOurs = caps.getOwnerUid() == Process.myUid();
+            if (isOurs == ours) return true;
+        }
+        return false;
     }
 
     /** Запрос, под который попадают все сети, включая VPN. */

@@ -45,6 +45,12 @@ final class ClaudeTargets {
             "mark.via.gp", "com.ecosia.android", "com.cloudmosa.puffinFree",
             "com.google.android.googlequicksearchbox"));
 
+    /** Домены, чьи IP дополнительно заворачиваются в VPN-блокировщик (размещены у Anthropic). */
+    static final String[] FIREWALL_DOMAINS = {
+            "claude.ai", "claude.com", "api.anthropic.com", "platform.claude.com",
+            "console.anthropic.com",
+    };
+
     private static final int MAX_NODES = 800;
 
     static boolean isClaudeApp(CharSequence pkg) {

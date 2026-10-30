@@ -40,6 +40,15 @@
             android:taskAffinity="io.github.sharlupa.claudeguard.block" />
 
         <service
+            android:name=".BlockVpnService"
+            android:exported="false"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".GuardService"
             android:exported="false"
             android:label="@string/service_label"

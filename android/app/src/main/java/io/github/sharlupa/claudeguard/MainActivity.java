@@ -10,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.net.VpnService;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,10 +28,14 @@ import java.util.Map;
 
 /** Главный экран: состояние защиты и настройки. */
 public class MainActivity extends Activity {
+    private static final int REQUEST_VPN = 1;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private TextView serviceStatus;
     private TextView vpnStatus;
+    private TextView netStatus;
+    private Switch netBlockSwitch;
     private Button enableService;
     private Button vpnAppButton;
 
@@ -60,6 +65,7 @@ public class MainActivity extends Activity {
 
         serviceStatus = findViewById(R.id.service_status);
         vpnStatus = findViewById(R.id.vpn_status);
+        netStatus = findViewById(R.id.net_status);
         enableService = findViewById(R.id.enable_service);
         vpnAppButton = findViewById(R.id.vpn_app);
 
@@ -73,6 +79,14 @@ public class MainActivity extends Activity {
         Switch browsers = findViewById(R.id.switch_browsers);
         browsers.setChecked(Prefs.blockBrowsers(this));
         browsers.setOnCheckedChangeListener((b, checked) -> Prefs.setBlockBrowsers(this, checked));
+
+        netBlockSwitch = findViewById(R.id.switch_net_block);
+        netBlockSwitch.setChecked(Prefs.netBlock(this) && VpnService.prepare(this) == null);
+        netBlockSwitch.setOnCheckedChangeListener((b, checked) -> onNetBlockToggled(checked));
+
+        Switch allApps = findViewById(R.id.switch_all_apps);
+        allApps.setChecked(Prefs.netBlockAllApps(this));
+        allApps.setOnCheckedChangeListener((b, checked) -> Prefs.setNetBlockAllApps(this, checked));
 
         enableService.setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
@@ -103,6 +117,34 @@ public class MainActivity extends Activity {
         super.onStop();
     }
 
+    private void onNetBlockToggled(boolean checked) {
+        if (!checked) {
+            Prefs.setNetBlock(this, false);
+            startService(new Intent(this, BlockVpnService.class)
+                    .setAction(BlockVpnService.ACTION_STOP));
+            updateStatus();
+            return;
+        }
+        Intent consent = VpnService.prepare(this);
+        if (consent != null) {
+            startActivityForResult(consent, REQUEST_VPN);
+        } else {
+            Prefs.setNetBlock(this, true);
+            updateStatus();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_VPN) return;
+        boolean granted = resultCode == RESULT_OK;
+        Prefs.setNetBlock(this, granted);
+        netBlockSwitch.setChecked(granted);
+        if (!granted) Toast.makeText(this, R.string.vpn_permission_denied, Toast.LENGTH_LONG).show();
+        updateStatus();
+    }
+
     private void updateStatus() {
         boolean serviceOn = isServiceEnabled();
         boolean active = serviceOn && Prefs.isEnabled(this);
@@ -114,6 +156,22 @@ public class MainActivity extends Activity {
         boolean vpn = VpnState.isVpnActive(this);
         vpnStatus.setText(vpn ? R.string.status_vpn_on : R.string.status_vpn_off);
         vpnStatus.setTextColor(getColor(vpn ? R.color.ok : R.color.bad));
+
+        boolean netOk;
+        if (vpn) {
+            netStatus.setText(R.string.status_net_user_vpn);
+            netOk = true;
+        } else if (VpnState.isBlockerActive(this)) {
+            netStatus.setText(R.string.status_net_blocking);
+            netOk = true;
+        } else if (Prefs.netBlock(this) && Prefs.isEnabled(this)) {
+            netStatus.setText(R.string.status_net_waiting);
+            netOk = false;
+        } else {
+            netStatus.setText(R.string.status_net_off);
+            netOk = false;
+        }
+        netStatus.setTextColor(getColor(netOk ? R.color.ok : R.color.bad));
 
         String pkg = Prefs.vpnApp(this);
         CharSequence label = pkg == null ? null : appLabel(pkg);

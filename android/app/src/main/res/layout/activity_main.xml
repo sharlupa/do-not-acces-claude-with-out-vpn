@@ -38,6 +38,13 @@
             android:layout_marginTop="6dp"
             android:textAppearance="?android:attr/textAppearanceMedium" />
 
+        <TextView
+            android:id="@+id/net_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
         <Switch
             android:id="@+id/switch_enabled"
             android:layout_width="match_parent"
@@ -52,6 +59,27 @@
             android:layout_height="wrap_content"
             android:minHeight="48dp"
             android:text="@string/switch_browsers" />
+
+        <Switch
+            android:id="@+id/switch_net_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/switch_net_block" />
+
+        <Switch
+            android:id="@+id/switch_all_apps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/switch_all_apps" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/net_block_hint"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <Button
             android:id="@+id/enable_service"
