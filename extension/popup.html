@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Claude VPN Guard</title>
+  <link rel="stylesheet" href="page.css">
+  <style>
+    body { width: 320px; padding: 16px; }
+    h1 { font-size: 17px; margin: 0 0 8px; }
+    .row { justify-content: flex-start; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1 id="title">Проверяю подключение…</h1>
+  <p id="text"></p>
+  <p class="muted" id="checked"></p>
+  <div class="row">
+    <button id="retry">Проверить</button>
+    <button id="options" class="secondary">Настройки</button>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

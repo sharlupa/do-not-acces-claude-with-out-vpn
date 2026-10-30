@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude VPN Guard — настройки</title>
+  <link rel="stylesheet" href="page.css">
+  <style>
+    main { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+    details { margin-top: 8px; }
+    summary { cursor: pointer; }
+    #countries { font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Claude VPN Guard</h1>
+    <p>Расширение проверяет, из какой страны вы выходите в интернет. К Claude пускает, только если это
+      страна, где Claude официально доступен. Из России, Беларуси, Китая, Ирана и других неподдерживаемых
+      стран — то есть без VPN — все запросы к Claude и Anthropic отклоняются ещё до отправки.</p>
+    <p id="status"></p>
+
+    <h2>Дополнительно запретить страны</h2>
+    <p class="muted">Коды через запятую, например <code>KZ, AM</code>. Полезно, если вы живёте в стране, где
+      Claude доступен, но всё равно хотите заходить только через VPN.</p>
+    <input type="text" id="alsoBlock" placeholder="например: KZ">
+
+    <h2>Где проверять страну подключения</h2>
+    <p class="muted">По одному адресу в строке, проверяются по очереди. Ответ — в формате Cloudflare
+      <code>/cdn-cgi/trace</code> (строка <code>loc=XX</code>). Если ваш VPN пускает через себя не весь трафик,
+      укажите адрес, который точно идёт через VPN.</p>
+    <textarea id="checkUrls" rows="4"></textarea>
+
+    <div class="row" style="justify-content:flex-start">
+      <button id="save">Сохранить</button>
+      <button id="reset" class="secondary">По умолчанию</button>
+    </div>
+    <p id="saved" class="muted"></p>
+
+    <details>
+      <summary>Страны, где Claude доступен (официальный список Anthropic)</summary>
+      <p id="countries"></p>
+    </details>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

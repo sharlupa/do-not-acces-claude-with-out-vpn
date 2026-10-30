@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Долгое нажатие на значок → «Настройки» -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="settings"
+        android:shortcutLongLabel="@string/shortcut_settings"
+        android:shortcutShortLabel="@string/shortcut_settings">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="io.github.sharlupa.claudeguard.MainActivity"
+            android:targetPackage="io.github.sharlupa.claudeguard" />
+    </shortcut>
+</shortcuts>

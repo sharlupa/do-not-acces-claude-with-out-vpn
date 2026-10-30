@@ -84,6 +84,10 @@ public class MainActivity extends Activity {
             updateStatus();
         });
 
+        Switch checkCountry = findViewById(R.id.switch_check_country);
+        checkCountry.setChecked(Prefs.checkCountry(this));
+        checkCountry.setOnCheckedChangeListener((b, checked) -> Prefs.setCheckCountry(this, checked));
+
         Switch browsers = findViewById(R.id.switch_browsers);
         browsers.setChecked(Prefs.blockBrowsers(this));
         browsers.setOnCheckedChangeListener((b, checked) -> Prefs.setBlockBrowsers(this, checked));

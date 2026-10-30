@@ -61,6 +61,8 @@ jobs:
         run: |
           sudo apt-get install -y -q shellcheck nftables
           shellcheck -S warning linux/claude-vpn-guard linux/*.sh
+          for f in extension/*.js; do node --check "$f"; done
+          python3 -c "import json; json.load(open('extension/manifest.json'))"
           CLAUDE_VPN_GUARD_CONFIG=linux/config linux/claude-vpn-guard print-rules | sudo nft -c -f -
 
       - name: Package
@@ -68,6 +70,7 @@ jobs:
           VERSION=1.0.${{ github.run_number }} linux/build-deb.sh "$PWD/dist"
           tar -czf dist/claude-vpn-guard-linux.tar.gz -C linux \
             claude-vpn-guard claude-vpn-guard.service config install.sh uninstall.sh
+          (cd extension && zip -qr ../dist/claude-vpn-guard-chrome.zip .)
 
       - uses: actions/upload-artifact@v4
         with:

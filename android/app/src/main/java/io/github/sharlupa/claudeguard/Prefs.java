@@ -15,6 +15,7 @@ final class Prefs {
     private static final String KEY_NET_BLOCK = "net_block";
     private static final String KEY_ALL_APPS = "net_block_all_apps";
     private static final String KEY_VPN_CONSENT = "vpn_consent";
+    private static final String KEY_CHECK_COUNTRY = "check_country";
     private static final String KEY_CACHED_IPS = "cached_ips";
     private static final String KEY_CACHED_AT = "cached_ips_at";
 
@@ -56,6 +57,15 @@ final class Prefs {
 
     static void setNetBlock(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_NET_BLOCK, value).apply();
+    }
+
+    /** Проверять страну подключения перед запуском Claude. */
+    static boolean checkCountry(Context ctx) {
+        return prefs(ctx).getBoolean(KEY_CHECK_COUNTRY, true);
+    }
+
+    static void setCheckCountry(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_CHECK_COUNTRY, value).apply();
     }
 
     /**

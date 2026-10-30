@@ -46,6 +46,20 @@
             android:textAppearance="?android:attr/textAppearanceMedium" />
 
         <Switch
+            android:id="@+id/switch_check_country"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:minHeight="48dp"
+            android:text="@string/switch_check_country" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/check_country_hint"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <Switch
             android:id="@+id/switch_enabled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

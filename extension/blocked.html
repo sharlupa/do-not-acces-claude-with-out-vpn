@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude заблокирован</title>
+  <link rel="stylesheet" href="page.css">
+</head>
+<body>
+  <main class="center">
+    <img src="icons/128.png" width="96" height="96" alt="">
+    <h1 id="title">Проверяю подключение…</h1>
+    <p id="text"></p>
+    <p class="muted" id="url"></p>
+    <div class="row">
+      <button id="retry">Проверить снова</button>
+    </div>
+    <p class="muted">Страница проверяет подключение каждые 3 секунды и откроет Claude, как только VPN заработает.</p>
+  </main>
+  <script type="module" src="blocked.js"></script>
+</body>
+</html>

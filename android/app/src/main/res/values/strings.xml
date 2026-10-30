@@ -2,10 +2,27 @@
 <resources>
     <string name="app_name">Claude VPN Guard</string>
 
+    <string name="launcher_label">Claude (VPN)</string>
+    <string name="launch_no_vpn_title">VPN не включён</string>
+    <string name="launch_no_vpn_text">Включите VPN — и Claude откроется сам.</string>
+    <string name="launch_no_claude_title">Claude не установлен</string>
+    <string name="launch_no_claude_text">Установите приложение Claude, а открывайте его через этот значок.</string>
+    <string name="launch_checking_title">Проверяю подключение…</string>
+    <string name="launch_checking_text">Смотрю, из какой страны вы выходите в интернет.</string>
+    <string name="launch_wrong_country_title">VPN не помогает</string>
+    <string name="launch_wrong_country_text">VPN включён, но интернет идёт из страны: %1$s (IP %2$s). Claude там недоступен — выберите в VPN сервер в другой стране. Claude откроется сам.</string>
+    <string name="launch_check_failed_title">Не удалось проверить подключение</string>
+    <string name="launch_check_failed_text">Нет ответа от сервера проверки — возможно, нет интернета или VPN ещё подключается.</string>
+    <string name="btn_retry">Проверить снова</string>
+    <string name="switch_check_country">Проверять страну подключения</string>
+    <string name="check_country_hint">Перед запуском Claude значок «Claude (VPN)» узнаёт (через Cloudflare, без обращения к Claude), из какой страны идёт интернет, и пускает только из стран, где Claude официально доступен. Защищает от VPN-сервера в неподходящей стране и от раздельного туннелирования.</string>
+    <string name="btn_settings">Настройки</string>
+    <string name="shortcut_settings">Настройки</string>
+
     <string name="vpn_session">Claude VPN Guard — блокировка Claude</string>
 
     <string name="main_title">Claude только через VPN</string>
-    <string name="main_subtitle">Без включённого VPN к серверам Anthropic не уходит ни одного пакета — ни из приложения Claude, ни из браузера.</string>
+    <string name="main_subtitle">Открывайте Claude через значок «Claude (VPN)»: он запускает Claude только при включённом VPN. Значок самого Claude лучше убрать с рабочего стола.\n\nДополнительно можно включить сетевую блокировку — тогда без VPN к серверам Anthropic не уйдёт ни одного пакета, даже если открыть Claude напрямую.</string>
     <string name="status_protection_on">Защита работает</string>
     <string name="status_protection_paused">Защита на паузе</string>
     <string name="status_service_off">Служба не включена — защита не работает</string>
