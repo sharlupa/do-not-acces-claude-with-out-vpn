@@ -15,6 +15,25 @@ android {
         versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // vpn  — только сетевая блокировка (VPN-блокировщик), без службы спец. возможностей;
+    //        Play Protect не ругается на такие приложения.
+    // full — плюс блокировка экрана Claude через службу спец. возможностей.
+    flavorDimensions += "mode"
+    productFlavors {
+        create("vpn") {
+            dimension = "mode"
+            buildConfigField("boolean", "SCREEN_GUARD", "false")
+        }
+        create("full") {
+            dimension = "mode"
+            buildConfigField("boolean", "SCREEN_GUARD", "true")
+        }
+    }
+
     val keystorePath = System.getenv("SIGNING_KEYSTORE")
     signingConfigs {
         if (keystorePath != null) {

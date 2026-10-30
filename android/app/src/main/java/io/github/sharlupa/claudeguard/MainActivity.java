@@ -2,6 +2,7 @@ package io.github.sharlupa.claudeguard;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,6 +17,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -29,6 +31,12 @@ import java.util.Map;
 /** Главный экран: состояние защиты и настройки. */
 public class MainActivity extends Activity {
     private static final int REQUEST_VPN = 1;
+    private static final int REQUEST_NOTIFICATIONS = 2;
+    /** Элементы блокировки экрана — только в полной версии (со спец. возможностями). */
+    private static final int[] SCREEN_GUARD_VIEWS = {
+            R.id.service_status, R.id.switch_enabled, R.id.switch_browsers,
+            R.id.enable_service, R.id.app_info,
+    };
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -61,7 +69,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        BlockActivity.applyInsets(findViewById(R.id.root));
+        Ui.applyInsets(findViewById(R.id.root));
 
         serviceStatus = findViewById(R.id.service_status);
         vpnStatus = findViewById(R.id.vpn_status);
@@ -95,6 +103,10 @@ public class MainActivity extends Activity {
                         Uri.fromParts("package", getPackageName(), null))));
         vpnAppButton.setOnClickListener(v -> chooseVpnApp());
         findViewById(R.id.open_vpn).setOnClickListener(v -> VpnState.openVpn(this));
+
+        if (!BuildConfig.SCREEN_GUARD) {
+            for (int id : SCREEN_GUARD_VIEWS) findViewById(id).setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -107,6 +119,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // служба могла быть остановлена системой — поднимаем её снова
+        if (Prefs.netBlock(this) && VpnService.prepare(this) == null) BlockVpnService.start(this);
         updateStatus();
     }
 
@@ -120,8 +134,7 @@ public class MainActivity extends Activity {
     private void onNetBlockToggled(boolean checked) {
         if (!checked) {
             Prefs.setNetBlock(this, false);
-            startService(new Intent(this, BlockVpnService.class)
-                    .setAction(BlockVpnService.ACTION_STOP));
+            BlockVpnService.stop(this);
             updateStatus();
             return;
         }
@@ -129,20 +142,33 @@ public class MainActivity extends Activity {
         if (consent != null) {
             startActivityForResult(consent, REQUEST_VPN);
         } else {
-            Prefs.setNetBlock(this, true);
-            updateStatus();
+            enableNetBlock();
         }
+    }
+
+    private void enableNetBlock() {
+        Prefs.setNetBlock(this, true);
+        BlockVpnService.start(this);
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_NOTIFICATIONS);
+        }
+        updateStatus();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQUEST_VPN) return;
-        boolean granted = resultCode == RESULT_OK;
-        Prefs.setNetBlock(this, granted);
-        netBlockSwitch.setChecked(granted);
-        if (!granted) Toast.makeText(this, R.string.vpn_permission_denied, Toast.LENGTH_LONG).show();
-        updateStatus();
+        if (resultCode == RESULT_OK) {
+            enableNetBlock();
+        } else {
+            Prefs.setNetBlock(this, false);
+            netBlockSwitch.setChecked(false);
+            Toast.makeText(this, R.string.vpn_permission_denied, Toast.LENGTH_LONG).show();
+            updateStatus();
+        }
     }
 
     private void updateStatus() {
@@ -164,7 +190,7 @@ public class MainActivity extends Activity {
         } else if (VpnState.isBlockerActive(this)) {
             netStatus.setText(R.string.status_net_blocking);
             netOk = true;
-        } else if (Prefs.netBlock(this) && Prefs.isEnabled(this)) {
+        } else if (Prefs.netBlock(this)) {
             netStatus.setText(R.string.status_net_waiting);
             netOk = false;
         } else {
@@ -183,7 +209,8 @@ public class MainActivity extends Activity {
         String enabled = Settings.Secure.getString(getContentResolver(),
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         if (enabled == null) return false;
-        ComponentName me = new ComponentName(this, GuardService.class);
+        ComponentName me = new ComponentName(getPackageName(),
+                getPackageName() + ".GuardService");
         TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
         splitter.setString(enabled);
         for (String s : splitter) {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_label">Claude VPN Guard</string>
+    <string name="service_description">Не даёт открыть приложение Claude и сайты claude.ai / anthropic.com, пока не включён VPN, и управляет VPN-блокировщиком, который закрывает сеть к Anthropic без VPN. Служба смотрит только, какое приложение открыто, и строку адреса браузера; данные никуда не отправляются.</string>
+    <string name="block_title">Claude заблокирован</string>
+    <string name="block_text">VPN не включён. Включите VPN — и Claude откроется автоматически.</string>
+    <string name="block_vpn_on">VPN включён ✓</string>
+    <string name="block_close">Закрыть</string>
+    <string name="setup_text">1. Нажмите «Включить службу», найдите «Claude VPN Guard» в разделе «Скачанные приложения» и включите.\n\n2. Если переключатель серый и написано «Ограниченная настройка» — откройте «О приложении», нажмите ⋮ в правом верхнем углу → «Разрешить ограниченные настройки», затем повторите шаг 1.\n\n3. Включите «Блокировать сеть» и разрешите VPN-подключение — тогда без VPN к Anthropic не уйдёт ни одного пакета.\n\n4. Выберите своё VPN-приложение, чтобы кнопка «Открыть VPN» на экране блокировки сразу запускала его.</string>
+</resources>

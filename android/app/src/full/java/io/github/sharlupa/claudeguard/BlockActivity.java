@@ -2,15 +2,12 @@ package io.github.sharlupa.claudeguard;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Insets;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.View;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
@@ -40,7 +37,7 @@ public class BlockActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_block);
-        applyInsets(findViewById(R.id.root));
+        Ui.applyInsets(findViewById(R.id.root));
         blockedPackage = getIntent().getStringExtra(EXTRA_PACKAGE);
 
         Button vpn = findViewById(R.id.open_vpn);
@@ -94,14 +91,5 @@ public class BlockActivity extends Activity {
                 .addCategory(Intent.CATEGORY_HOME)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         finish();
-    }
-
-    static void applyInsets(View root) {
-        root.setOnApplyWindowInsetsListener((v, insets) -> {
-            Insets bars = insets.getInsets(
-                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            return WindowInsets.CONSUMED;
-        });
     }
 }
