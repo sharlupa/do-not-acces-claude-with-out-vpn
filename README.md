@@ -7,7 +7,7 @@
 |---|---|
 | **Linux (systemd)** | Фаервол nftables отклоняет соединения к серверам Anthropic, если они идут не через VPN-интерфейс. Пока VPN выключен, домены Claude ещё и заглушаются в `/etc/hosts`, чтобы DNS-запросы не уходили провайдеру. |
 | **Android 15–16** | Значок «Claude (VPN)»: открывает Claude, только если включён VPN и интернет идёт из страны, где Claude доступен. Дополнительно — «VPN-блокировщик»: пока ваш VPN выключен, к серверам Anthropic не уходит ни одного пакета. |
-| **Chrome** (и Яндекс Браузер, Edge, Brave, Vivaldi) | Расширение: пускает на claude.ai / anthropic.com, только если интернет идёт из страны, где Claude официально доступен. Из России, Беларуси, Китая, Ирана и др. — блокирует все запросы до отправки. |
+| **Chrome на компьютере** (и Яндекс Браузер, Edge, Brave, Vivaldi) | Расширение: пускает на claude.ai / anthropic.com, только если интернет идёт из страны, где Claude официально доступен. Из России, Беларуси, Китая, Ирана и др. — блокирует все запросы до отправки. |
 
 ## Скачать
 
@@ -16,7 +16,7 @@
 - `claude-vpn-guard-android.apk` — приложение для Android (сетевая блокировка, рекомендуется)
 - `claude-vpn-guard-android-full.apk` — то же + блокировка экрана Claude (использует спец. возможности,
   Google Play Protect может её блокировать)
-- `claude-vpn-guard-chrome.zip` — расширение для Chrome / Chromium-браузеров
+- `claude-vpn-guard-chrome.zip` — расширение для Chrome / Chromium-браузеров на компьютере
 - `claude-vpn-guard-*-any.pkg.tar.zst` — пакет для Arch Linux (и Manjaro, EndeavourOS, CachyOS)
 - `claude-vpn-guard_*.deb` — пакет для Debian / Ubuntu / Mint
 - `claude-vpn-guard-linux.tar.gz` — для любого другого Linux с systemd
@@ -157,8 +157,12 @@ VPN:        АКТИВЕН (интерфейс hytun) — Claude доступе�
 
 ## Chrome (расширение)
 
-Работает в Chrome, Chromium, Яндекс Браузере, Edge, Brave, Vivaldi — на Linux, Windows и macOS (на
-Android — в браузерах с поддержкой расширений, например Яндекс Браузере).
+Работает в Chrome, Chromium, Яндекс Браузере, Edge, Brave, Vivaldi **на компьютере** (Linux, Windows,
+macOS).
+
+**На телефоне расширение не поставить:** Chrome для Android не поддерживает расширения вообще. На телефоне
+браузеры закрывает Android-приложение — его «VPN-блокировщик» не пускает к серверам Anthropic из любого
+браузера, пока VPN выключен (см. раздел «Android» ниже).
 
 ### Установка
 
