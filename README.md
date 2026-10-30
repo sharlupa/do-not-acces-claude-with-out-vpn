@@ -13,14 +13,29 @@
 Готовые файлы лежат в **[Releases → latest](../../releases/tag/latest)** (собираются GitHub Actions при каждом push):
 
 - `claude-vpn-guard-android.apk` — приложение для Android
+- `claude-vpn-guard-*-any.pkg.tar.zst` — пакет для Arch Linux (и Manjaro, EndeavourOS, CachyOS)
 - `claude-vpn-guard_*.deb` — пакет для Debian / Ubuntu / Mint
-- `claude-vpn-guard-linux.tar.gz` — для любого Linux с systemd (Arch, Fedora, openSUSE…)
+- `claude-vpn-guard-linux.tar.gz` — для любого другого Linux с systemd
 
 ---
 
 ## Linux
 
 Нужны `nftables`, `iproute2` и systemd.
+
+**Arch Linux** — готовый пакет из Releases:
+
+```bash
+sudo pacman -U claude-vpn-guard-*-any.pkg.tar.zst
+```
+
+или собрать из клона репозитория:
+
+```bash
+cd linux && makepkg -si
+```
+
+Служба включается сама при установке. `pacman -R claude-vpn-guard` снимает блокировку и удаляет всё.
 
 **Debian / Ubuntu:**
 
@@ -58,12 +73,33 @@ nftables:   правила загружены
   Через `eth0` / `wlan0` соединение сразу отклоняется.
 - Это работает для любого браузера (включая DNS-over-HTTPS и QUIC), для Claude Code в терминале и для
   Docker-контейнеров.
+- `nftables.service` в Arch при запуске делает `flush ruleset` — служба это замечает и за ~3 секунды
+  возвращает свои правила.
 - Split tunneling тоже учтён: если VPN включён, но Claude в него не заворачивается, Claude будет заблокирован.
 - Раз в 3 секунды служба проверяет, через какой интерфейс идёт маршрут к Claude, и включает/выключает
   заглушки в `/etc/hosts`. Если правила кто-то сбросит (например, `nft flush ruleset`), они восстановятся.
 - При смене состояния на рабочий стол приходит уведомление (нужен `notify-send`).
 - Если процесс упадёт, правила остаются (блокировка не снимается). Снимаются они только при
   `systemctl stop`.
+
+### Claude Code в терминале
+
+Claude Code обращается к `api.anthropic.com`, `claude.ai` и `platform.claude.com` (вход), — все они
+находятся в сети Anthropic `160.79.104.0/23`, поэтому без VPN он не подключится. Плюс в `/etc/hosts`
+заглушаются `downloads.claude.ai` (обновления), `mcp-proxy.anthropic.com` и адреса телеметрии Datadog,
+чтобы и они не уходили мимо VPN.
+
+Проверено на настоящем Claude Code 2.1 в тестовой сети с «провайдером» (`wlan0`) и «VPN» (`wg0`):
+
+| Режим | Что произошло |
+|---|---|
+| VPN выключен | все 31 попытка соединения отклонены фаерволом, до сервера не дошло ни одной |
+| VPN выключен + заглушки hosts | `api.anthropic.com` → `::`, до сервера не дошло ни одной |
+| VPN включён | соединения пошли через `wg0` и дошли до сервера |
+
+Без VPN Claude Code не выдаёт ошибку сразу: он какое-то время переподключается, а потом пишет
+`Unable to connect to API`. Если Claude Code настроен на Amazon Bedrock или Google Vertex, а не на API
+Anthropic, эти адреса не блокируются.
 
 ### Настройка
 

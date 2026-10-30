@@ -73,8 +73,29 @@ jobs:
           name: linux
           path: dist/
 
+  arch:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Arch package
+        run: |
+          useradd -m builder
+          cp -r linux /home/builder/pkg
+          sed -i "s/^pkgver=.*/pkgver=1.0.${{ github.run_number }}/" /home/builder/pkg/PKGBUILD
+          chown -R builder /home/builder/pkg
+          su builder -c "cd ~/pkg && makepkg --nodeps --noconfirm"
+          mkdir -p dist
+          cp /home/builder/pkg/*.pkg.tar.zst dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch
+          path: dist/
+
   release:
-    needs: [android, linux]
+    needs: [android, linux, arch]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

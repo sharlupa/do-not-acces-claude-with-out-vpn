@@ -1,0 +1,18 @@
+post_install() {
+    systemctl daemon-reload
+    systemctl enable --now claude-vpn-guard.service
+    echo ">>> Claude VPN Guard включён. Проверка: claude-vpn-guard status"
+}
+
+post_upgrade() {
+    systemctl daemon-reload
+    systemctl try-restart claude-vpn-guard.service
+}
+
+pre_remove() {
+    systemctl disable --now claude-vpn-guard.service
+}
+
+post_remove() {
+    systemctl daemon-reload
+}

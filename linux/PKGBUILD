@@ -1,0 +1,21 @@
+# Сборка: cd linux && makepkg -si
+pkgname=claude-vpn-guard
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Blocks Claude / Anthropic (website, apps, Claude Code) unless traffic goes through a VPN"
+arch=('any')
+url="https://github.com/sharlupa/do-not-acces-claude-with-out-vpn"
+license=('unknown')
+depends=('bash' 'coreutils' 'glibc' 'iproute2' 'nftables' 'systemd' 'util-linux')
+optdepends=('libnotify: desktop notifications when the VPN goes up/down')
+backup=('etc/claude-vpn-guard/config')
+install=claude-vpn-guard.install
+source=('claude-vpn-guard' 'claude-vpn-guard.service' 'config')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+    install -Dm755 claude-vpn-guard "$pkgdir/usr/bin/claude-vpn-guard"
+    sed 's#/usr/local/bin/#/usr/bin/#' claude-vpn-guard.service \
+        | install -Dm644 /dev/stdin "$pkgdir/usr/lib/systemd/system/claude-vpn-guard.service"
+    install -Dm644 config "$pkgdir/etc/claude-vpn-guard/config"
+}

@@ -1,12 +1,18 @@
 # Настройки Claude VPN Guard. После изменения:
 #   sudo systemctl restart claude-vpn-guard
 
-# Домены, которые блокируются через /etc/hosts без VPN и чьи IP добавляются в фаервол
+# Домены, которые заглушаются в /etc/hosts, пока VPN выключен
+# (сайт, приложение, Claude Code, его обновления и телеметрия)
 DOMAINS="claude.ai www.claude.ai claude.com www.claude.com anthropic.com www.anthropic.com
 api.anthropic.com console.anthropic.com docs.anthropic.com support.anthropic.com
 statsig.anthropic.com a-cdn.anthropic.com a-api.anthropic.com s-cdn.anthropic.com
-platform.claude.com code.claude.com docs.claude.com support.claude.com
-claudeusercontent.com www.claudeusercontent.com claude.site"
+mcp-proxy.anthropic.com status.anthropic.com portal.anthropic.com
+platform.claude.com code.claude.com docs.claude.com support.claude.com status.claude.com
+downloads.claude.ai preview.claude.ai claudeusercontent.com www.claudeusercontent.com claude.site
+http-intake.logs.us5.datadoghq.com browser-intake-us5-datadoghq.com"
+# Домены, чьи IP дополнительно добавляются в фаервол (только размещённые у самой
+# Anthropic — чтобы не заблокировать чужие сайты на общих CDN)
+FIREWALL_DOMAINS="claude.ai claude.com api.anthropic.com platform.claude.com console.anthropic.com"
 
 # Сети Anthropic, трафик к которым разрешён только через VPN-интерфейс
 STATIC_V4="160.79.104.0/23"

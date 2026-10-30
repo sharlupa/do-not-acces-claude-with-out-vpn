@@ -24,8 +24,13 @@ STATE_DIR="/run/claude-vpn-guard"
 DOMAINS="claude.ai www.claude.ai claude.com www.claude.com anthropic.com www.anthropic.com
 api.anthropic.com console.anthropic.com docs.anthropic.com support.anthropic.com
 statsig.anthropic.com a-cdn.anthropic.com a-api.anthropic.com s-cdn.anthropic.com
-platform.claude.com code.claude.com docs.claude.com support.claude.com
-claudeusercontent.com www.claudeusercontent.com claude.site"
+mcp-proxy.anthropic.com status.anthropic.com portal.anthropic.com
+platform.claude.com code.claude.com docs.claude.com support.claude.com status.claude.com
+downloads.claude.ai preview.claude.ai claudeusercontent.com www.claudeusercontent.com claude.site
+http-intake.logs.us5.datadoghq.com browser-intake-us5-datadoghq.com"
+# Домены, чьи IP дополнительно добавляются в фаервол (только размещённые у самой
+# Anthropic — чтобы не заблокировать чужие сайты на общих CDN)
+FIREWALL_DOMAINS="claude.ai claude.com api.anthropic.com platform.claude.com console.anthropic.com"
 # Собственные сети Anthropic (AS399358)
 STATIC_V4="160.79.104.0/23"
 STATIC_V6="2607:6bc0::/48"
@@ -114,7 +119,7 @@ nft_remove() { nft delete table inet "$TABLE" 2>/dev/null || true; }
 # включённом VPN, чтобы DNS-запросы не уходили мимо него.
 resolve_domains() {
     local d ip v4="" v6=""
-    for d in $DOMAINS; do
+    for d in $FIREWALL_DOMAINS; do
         while read -r ip _; do
             case "$ip" in
                 0.0.0.0|127.*|::|::1|"") ;;
