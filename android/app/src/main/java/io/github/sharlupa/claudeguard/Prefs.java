@@ -14,6 +14,7 @@ final class Prefs {
     private static final String KEY_VPN_APP = "vpn_app";
     private static final String KEY_NET_BLOCK = "net_block";
     private static final String KEY_ALL_APPS = "net_block_all_apps";
+    private static final String KEY_VPN_CONSENT = "vpn_consent";
     private static final String KEY_CACHED_IPS = "cached_ips";
     private static final String KEY_CACHED_AT = "cached_ips_at";
 
@@ -55,6 +56,20 @@ final class Prefs {
 
     static void setNetBlock(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_NET_BLOCK, value).apply();
+    }
+
+    /**
+     * Выдано ли разрешение на VPN. Храним сами: VpnService.prepare() при уже выданном
+     * разрешении делает это приложение активным VPN и отключает ваш VPN, поэтому
+     * вызывать его можно только когда ваш VPN выключен.
+     */
+    static boolean vpnConsent(Context ctx) {
+        // в прошлой версии флага не было: если блокировка была включена, разрешение уже есть
+        return prefs(ctx).getBoolean(KEY_VPN_CONSENT, netBlock(ctx));
+    }
+
+    static void setVpnConsent(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_VPN_CONSENT, value).apply();
     }
 
     /** Заворачивать в блокировщик все приложения, а не только Claude и браузеры. */

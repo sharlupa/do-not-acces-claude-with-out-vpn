@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
         browsers.setOnCheckedChangeListener((b, checked) -> Prefs.setBlockBrowsers(this, checked));
 
         netBlockSwitch = findViewById(R.id.switch_net_block);
-        netBlockSwitch.setChecked(Prefs.netBlock(this) && VpnService.prepare(this) == null);
+        netBlockSwitch.setChecked(Prefs.netBlock(this) && Prefs.vpnConsent(this));
         netBlockSwitch.setOnCheckedChangeListener((b, checked) -> onNetBlockToggled(checked));
 
         Switch allApps = findViewById(R.id.switch_all_apps);
@@ -120,7 +120,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         // служба могла быть остановлена системой — поднимаем её снова
-        if (Prefs.netBlock(this) && VpnService.prepare(this) == null) BlockVpnService.start(this);
+        if (Prefs.netBlock(this) && Prefs.vpnConsent(this)) BlockVpnService.start(this);
         updateStatus();
     }
 
@@ -138,10 +138,29 @@ public class MainActivity extends Activity {
             updateStatus();
             return;
         }
+        if (Prefs.vpnConsent(this)) {
+            enableNetBlock();
+        } else if (VpnState.isVpnActive(this)) {
+            // Выдача разрешения на VPN всегда отключает текущий VPN — предупреждаем
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.consent_title)
+                    .setMessage(R.string.consent_message)
+                    .setPositiveButton(R.string.consent_continue, (d, w) -> requestConsent())
+                    .setNegativeButton(android.R.string.cancel,
+                            (d, w) -> netBlockSwitch.setChecked(false))
+                    .setOnCancelListener(d -> netBlockSwitch.setChecked(false))
+                    .show();
+        } else {
+            requestConsent();
+        }
+    }
+
+    private void requestConsent() {
         Intent consent = VpnService.prepare(this);
         if (consent != null) {
             startActivityForResult(consent, REQUEST_VPN);
         } else {
+            Prefs.setVpnConsent(this, true);
             enableNetBlock();
         }
     }
@@ -162,6 +181,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQUEST_VPN) return;
         if (resultCode == RESULT_OK) {
+            Prefs.setVpnConsent(this, true);
             enableNetBlock();
         } else {
             Prefs.setNetBlock(this, false);

@@ -44,6 +44,7 @@ public class BlockVpnService extends VpnService {
     private static final String TAG = "ClaudeVpnGuard";
     private static final String ACTION_START = "io.github.sharlupa.claudeguard.START_BLOCKER";
     private static final String ACTION_STOP = "io.github.sharlupa.claudeguard.STOP_BLOCKER";
+    private static final String EXTRA_DELAY_MS = "delay_ms";
     private static final String CHANNEL_ID = "guard";
     private static final int NOTIFICATION_ID = 1;
 
@@ -140,7 +141,14 @@ public class BlockVpnService extends VpnService {
     // ---------------------------------------------------------------------------------
 
     static void start(Context ctx) {
-        ctx.startForegroundService(new Intent(ctx, BlockVpnService.class).setAction(ACTION_START));
+        start(ctx, 0);
+    }
+
+    /** delayMs — подождать перед первой проверкой (после загрузки VPN-клиент может подключаться). */
+    static void start(Context ctx, long delayMs) {
+        ctx.startForegroundService(new Intent(ctx, BlockVpnService.class)
+                .setAction(ACTION_START)
+                .putExtra(EXTRA_DELAY_MS, delayMs));
     }
 
     static void stop(Context ctx) {
@@ -162,7 +170,7 @@ public class BlockVpnService extends VpnService {
             return START_NOT_STICKY;
         }
         init();
-        schedule(0);
+        schedule(intent == null ? NET_DEBOUNCE_MS : intent.getLongExtra(EXTRA_DELAY_MS, 0));
         return START_STICKY;
     }
 
@@ -244,12 +252,6 @@ public class BlockVpnService extends VpnService {
             setStatus(R.string.notif_user_vpn);
             return;
         }
-        if (prepare(this) != null) {
-            closeTun();
-            setStatus(R.string.notif_no_permission);
-            return;
-        }
-
         long now = SystemClock.elapsedRealtime();
         long revokedAt;
         synchronized (this) {
@@ -263,6 +265,13 @@ public class BlockVpnService extends VpnService {
         }
         if (lastFailAt != 0 && now - lastFailAt < RETRY_MS && !isUp()) {
             schedule(RETRY_MS - (now - lastFailAt));
+            return;
+        }
+        // Только здесь, когда вашего VPN нет и он не подключается: prepare() делает
+        // блокировщик активным VPN-приложением и отключил бы ваш VPN.
+        if (!isUp() && prepare(this) != null) {
+            Prefs.setVpnConsent(this, false);
+            setStatus(R.string.notif_no_permission);
             return;
         }
 
